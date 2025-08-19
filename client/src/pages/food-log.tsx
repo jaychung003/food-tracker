@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import FoodSearch from "@/components/ui/food-search";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { X, Edit, Sparkles, AlertTriangle } from "lucide-react";
+import { X, Edit, Sparkles, AlertTriangle, Plus } from "lucide-react";
 
 interface TriggerIngredient {
   ingredient: string;
@@ -27,6 +27,7 @@ export default function FoodLog() {
     return now.toISOString().slice(0, 16);
   });
   const [isEditingIngredients, setIsEditingIngredients] = useState(false);
+  const [newIngredient, setNewIngredient] = useState("");
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -57,6 +58,34 @@ export default function FoodLog() {
     setDishName(selectedDish);
     setIngredients(detectedIngredients);
     setTriggerIngredients(detectedTriggers);
+  };
+
+  const removeIngredient = (indexToRemove: number) => {
+    const updatedIngredients = ingredients.filter((_, index) => index !== indexToRemove);
+    setIngredients(updatedIngredients);
+    // Re-analyze triggers after ingredient removal
+    if (updatedIngredients.length > 0) {
+      reAnalyzeTriggersMutation.mutate(updatedIngredients);
+    } else {
+      setTriggerIngredients([]);
+    }
+  };
+
+  const addIngredient = () => {
+    if (newIngredient.trim() && !ingredients.includes(newIngredient.trim())) {
+      const updatedIngredients = [...ingredients, newIngredient.trim()];
+      setIngredients(updatedIngredients);
+      setNewIngredient("");
+      // Re-analyze triggers after ingredient addition
+      reAnalyzeTriggersMutation.mutate(updatedIngredients);
+    }
+  };
+
+  const handleAddIngredientKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addIngredient();
+    }
   };
 
   // AI re-analysis mutation for edited ingredients
@@ -145,23 +174,67 @@ export default function FoodLog() {
             </div>
             
             {isEditingIngredients ? (
-              <div className="space-y-2">
-                <Input
-                  value={ingredients.join(", ")}
-                  onChange={(e) => setIngredients(e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
-                  placeholder="Enter ingredients separated by commas"
-                />
+              <div className="space-y-3">
+                {/* Editable ingredient pills */}
+                <div className="flex flex-wrap gap-2">
+                  {ingredients.map((ingredient, index) => {
+                    const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full ${
+                          triggerInfo
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-green-100 text-green-700 border border-green-200"
+                        }`}
+                      >
+                        <span>
+                          {ingredient}
+                          {triggerInfo && (
+                            <span className="ml-1 text-xs opacity-75">
+                              ({triggerInfo.category})
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeIngredient(index)}
+                          className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-red-200 hover:text-red-800 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Add new ingredient */}
+                  <div className="flex items-center gap-1">
+                    <Input
+                      value={newIngredient}
+                      onChange={(e) => setNewIngredient(e.target.value)}
+                      onKeyPress={handleAddIngredientKeyPress}
+                      placeholder="Add ingredient"
+                      className="w-32 h-8 text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addIngredient}
+                      disabled={!newIngredient.trim() || ingredients.includes(newIngredient.trim())}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setIsEditingIngredients(false);
-                      if (ingredients.length > 0) {
-                        reAnalyzeTriggersMutation.mutate(ingredients);
-                      }
-                    }}
+                    onClick={() => setIsEditingIngredients(false)}
                     disabled={reAnalyzeTriggersMutation.isPending}
                   >
                     {reAnalyzeTriggersMutation.isPending ? (
@@ -170,19 +243,8 @@ export default function FoodLog() {
                         Analyzing...
                       </>
                     ) : (
-                      <>
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Analyze with AI
-                      </>
+                      "Done Editing"
                     )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditingIngredients(false)}
-                  >
-                    Cancel
                   </Button>
                 </div>
               </div>
@@ -216,7 +278,7 @@ export default function FoodLog() {
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <h4 className="flex items-center text-sm font-medium text-red-900 mb-2">
                       <AlertTriangle className="w-4 h-4 mr-1" />
-                      Potential Triggers Detected
+                      Potential UC Triggers Detected
                     </h4>
                     <div className="space-y-2">
                       {triggerIngredients.map((trigger, index) => (
