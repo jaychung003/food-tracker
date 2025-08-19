@@ -26,7 +26,7 @@ export default function FoodLog() {
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   });
-  const [isEditingIngredients, setIsEditingIngredients] = useState(true);
+  const [ingredientMode, setIngredientMode] = useState<'choose' | 'ai' | 'manual'>('choose');
   const [newIngredient, setNewIngredient] = useState("");
 
   const { toast } = useToast();
@@ -58,6 +58,25 @@ export default function FoodLog() {
     setDishName(selectedDish);
     setIngredients(detectedIngredients);
     setTriggerIngredients(detectedTriggers);
+    setIngredientMode('ai');
+  };
+
+  const handleAIDetection = () => {
+    if (!dishName.trim()) return;
+    setIngredientMode('ai');
+    // The FoodSearch component will handle the AI analysis
+  };
+
+  const handleManualEntry = () => {
+    setIngredients([]);
+    setTriggerIngredients([]);
+    setIngredientMode('manual');
+  };
+
+  const resetIngredientMode = () => {
+    setIngredientMode('choose');
+    setIngredients([]);
+    setTriggerIngredients([]);
   };
 
   const removeIngredient = (indexToRemove: number) => {
@@ -147,154 +166,231 @@ export default function FoodLog() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Smart Food Search */}
+        {/* Step 1: Dish Name */}
         <div className="space-y-2">
-          <Label htmlFor="food-search">Search or enter dish name</Label>
-          <FoodSearch
+          <Label htmlFor="dish-name">Dish or drink name</Label>
+          <Input
+            id="dish-name"
             value={dishName}
-            onChange={setDishName}
-            onFoodSelect={handleFoodSelect}
+            onChange={(e) => {
+              setDishName(e.target.value);
+              if (ingredientMode !== 'choose') {
+                resetIngredientMode();
+              }
+            }}
+            placeholder="e.g., chicken pasta, coffee, Prime energy drink"
+            required
           />
         </div>
 
-        {/* Detected Ingredients */}
-        {ingredients.length > 0 && (
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-medium text-gray-900">Detected Ingredients</p>
+        {/* Step 2: Choose ingredient method */}
+        {dishName.trim() && ingredientMode === 'choose' && (
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <Label className="text-base font-medium mb-3 block">How would you like to add ingredients?</Label>
+            <div className="flex flex-col gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAIDetection}
+                className="justify-start h-auto p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div className="text-left">
+                    <div className="font-medium">Use AI detection (recommended)</div>
+                    <div className="text-sm text-gray-600 mt-1">AI will analyze "{dishName}" and detect ingredients and UC triggers automatically</div>
+                  </div>
+                </div>
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleManualEntry}
+                className="justify-start h-auto p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <Edit className="w-5 h-5 text-gray-600 mt-0.5" />
+                  <div className="text-left">
+                    <div className="font-medium">Enter ingredients manually</div>
+                    <div className="text-sm text-gray-600 mt-1">Add ingredients yourself and skip AI analysis</div>
+                  </div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: AI Detection */}
+        {ingredientMode === 'ai' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-medium">AI-detected ingredients</Label>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsEditingIngredients(!isEditingIngredients)}
+                onClick={resetIngredientMode}
               >
-                {isEditingIngredients ? "View Only" : "Edit"}
+                Change method
               </Button>
             </div>
             
-            {isEditingIngredients ? (
+            {ingredients.length === 0 ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <FoodSearch
+                  value={dishName}
+                  onChange={setDishName}
+                  onFoodSelect={handleFoodSelect}
+                />
+              </div>
+            ) : (
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {ingredients.map((ingredient, index) => {
+                      const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full ${
+                            triggerInfo
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-green-100 text-green-700 border border-green-200"
+                          }`}
+                        >
+                          <span>
+                            {ingredient}
+                            {triggerInfo && (
+                              <span className="ml-1 text-xs opacity-75">
+                                ({triggerInfo.category})
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeIngredient(index)}
+                            className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-red-200 hover:text-red-800 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Add new ingredient */}
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newIngredient}
+                        onChange={(e) => setNewIngredient(e.target.value)}
+                        onKeyPress={handleAddIngredientKeyPress}
+                        placeholder="Add ingredient"
+                        className="w-32 h-8 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addIngredient}
+                        disabled={!newIngredient.trim() || ingredients.includes(newIngredient.trim())}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Detailed trigger information */}
+                  {triggerIngredients.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <h4 className="flex items-center text-sm font-medium text-red-900 mb-2">
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        Potential UC Triggers Detected
+                      </h4>
+                      <div className="space-y-2">
+                        {triggerIngredients.map((trigger, index) => (
+                          <div key={index} className="text-xs text-red-700">
+                            <span className="font-medium capitalize">{trigger.ingredient}</span>
+                            <span className="mx-1">•</span>
+                            <span className="uppercase text-red-600">{trigger.category}</span>
+                            <span className="mx-1">•</span>
+                            <span>{Math.round(trigger.confidence * 100)}% confidence</span>
+                            <div className="mt-1 text-red-600 italic">{trigger.reason}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Manual Entry */}
+        {ingredientMode === 'manual' && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-medium">Ingredients</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetIngredientMode}
+              >
+                Change method
+              </Button>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="space-y-3">
-                {/* Editable ingredient pills */}
-                <div className="flex flex-wrap gap-2">
-                  {ingredients.map((ingredient, index) => {
-                    const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
-                    return (
+                {ingredients.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {ingredients.map((ingredient, index) => (
                       <div
                         key={index}
-                        className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full ${
-                          triggerInfo
-                            ? "bg-red-100 text-red-700 border border-red-200"
-                            : "bg-green-100 text-green-700 border border-green-200"
-                        }`}
+                        className="flex items-center gap-1 px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 border border-blue-200"
                       >
-                        <span>
-                          {ingredient}
-                          {triggerInfo && (
-                            <span className="ml-1 text-xs opacity-75">
-                              ({triggerInfo.category})
-                            </span>
-                          )}
-                        </span>
+                        <span>{ingredient}</span>
                         <button
                           type="button"
                           onClick={() => removeIngredient(index)}
-                          className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-red-200 hover:text-red-800 transition-colors"
+                          className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 hover:text-blue-800 transition-colors"
                         >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                    );
-                  })}
-                  
-                  {/* Add new ingredient */}
-                  <div className="flex items-center gap-1">
-                    <Input
-                      value={newIngredient}
-                      onChange={(e) => setNewIngredient(e.target.value)}
-                      onKeyPress={handleAddIngredientKeyPress}
-                      placeholder="Add ingredient"
-                      className="w-32 h-8 text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addIngredient}
-                      disabled={!newIngredient.trim() || ingredients.includes(newIngredient.trim())}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    ))}
                   </div>
-                </div>
+                )}
                 
-                <div className="flex gap-2">
+                {/* Add new ingredient */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newIngredient}
+                    onChange={(e) => setNewIngredient(e.target.value)}
+                    onKeyPress={handleAddIngredientKeyPress}
+                    placeholder="Add ingredient (e.g., chicken, rice, tomato)"
+                    className="flex-1"
+                  />
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingIngredients(false)}
-                    disabled={reAnalyzeTriggersMutation.isPending}
+                    onClick={addIngredient}
+                    disabled={!newIngredient.trim() || ingredients.includes(newIngredient.trim())}
                   >
-                    {reAnalyzeTriggersMutation.isPending ? (
-                      <>
-                        <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      "Done Editing"
-                    )}
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {ingredients.map((ingredient, index) => {
-                    const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
-                    return (
-                      <span
-                        key={index}
-                        className={`px-3 py-1 text-sm rounded-full ${
-                          triggerInfo
-                            ? "bg-red-100 text-red-700 border border-red-200"
-                            : "bg-green-100 text-green-700 border border-green-200"
-                        }`}
-                      >
-                        {ingredient}
-                        {triggerInfo && (
-                          <span className="ml-1 text-xs opacity-75">
-                            ({triggerInfo.category})
-                          </span>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
                 
-                {/* Detailed trigger information */}
-                {triggerIngredients.length > 0 && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <h4 className="flex items-center text-sm font-medium text-red-900 mb-2">
-                      <AlertTriangle className="w-4 h-4 mr-1" />
-                      Potential UC Triggers Detected
-                    </h4>
-                    <div className="space-y-2">
-                      {triggerIngredients.map((trigger, index) => (
-                        <div key={index} className="text-xs text-red-700">
-                          <span className="font-medium capitalize">{trigger.ingredient}</span>
-                          <span className="mx-1">•</span>
-                          <span className="uppercase text-red-600">{trigger.category}</span>
-                          <span className="mx-1">•</span>
-                          <span>{Math.round(trigger.confidence * 100)}% confidence</span>
-                          <div className="mt-1 text-red-600 italic">{trigger.reason}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {ingredients.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    Add ingredients to continue
+                  </p>
                 )}
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -312,14 +408,10 @@ export default function FoodLog() {
 
         {/* Save Button */}
         <div className="space-y-2">
-          {ingredients.length === 0 && dishName.trim() && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-              <p className="text-sm text-blue-700 mb-2">
-                <Sparkles className="w-4 h-4 inline mr-1" />
-                Use AI to detect ingredients first
-              </p>
-              <p className="text-xs text-blue-600">
-                Click the "Analyze with AI" button above to automatically detect ingredients and UC triggers
+          {ingredientMode === 'choose' && dishName.trim() && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+              <p className="text-sm text-yellow-700">
+                Choose how to add ingredients above to continue
               </p>
             </div>
           )}
@@ -327,7 +419,7 @@ export default function FoodLog() {
           <Button
             type="submit"
             className="w-full"
-            disabled={createFoodEntryMutation.isPending || ingredients.length === 0 || !dishName.trim()}
+            disabled={createFoodEntryMutation.isPending || ingredients.length === 0 || !dishName.trim() || ingredientMode === 'choose'}
           >
             {createFoodEntryMutation.isPending ? "Saving..." : "Save Food Entry"}
           </Button>
