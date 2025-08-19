@@ -26,7 +26,7 @@ export default function FoodLog() {
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   });
-  const [isEditingIngredients, setIsEditingIngredients] = useState(false);
+  const [isEditingIngredients, setIsEditingIngredients] = useState(true);
   const [newIngredient, setNewIngredient] = useState("");
 
   const { toast } = useToast();
@@ -168,8 +168,7 @@ export default function FoodLog() {
                 size="sm"
                 onClick={() => setIsEditingIngredients(!isEditingIngredients)}
               >
-                <Edit className="w-4 h-4 mr-1" />
-                Edit
+                {isEditingIngredients ? "View Only" : "Edit"}
               </Button>
             </div>
             
