@@ -312,13 +312,27 @@ export default function FoodLog() {
         </div>
 
         {/* Save Button */}
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={createFoodEntryMutation.isPending}
-        >
-          {createFoodEntryMutation.isPending ? "Saving..." : "Save Food Entry"}
-        </Button>
+        <div className="space-y-2">
+          {ingredients.length === 0 && dishName.trim() && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <p className="text-sm text-blue-700 mb-2">
+                <Sparkles className="w-4 h-4 inline mr-1" />
+                Use AI to detect ingredients first
+              </p>
+              <p className="text-xs text-blue-600">
+                Click the "Analyze with AI" button above to automatically detect ingredients and UC triggers
+              </p>
+            </div>
+          )}
+          
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={createFoodEntryMutation.isPending || ingredients.length === 0 || !dishName.trim()}
+          >
+            {createFoodEntryMutation.isPending ? "Saving..." : "Save Food Entry"}
+          </Button>
+        </div>
       </form>
     </div>
   );
