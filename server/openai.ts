@@ -15,19 +15,23 @@ export interface IngredientAnalysis {
 
 export async function analyzeIngredients(dishName: string): Promise<IngredientAnalysis> {
   try {
-    const prompt = `Analyze the dish "${dishName}" and provide:
-1. A comprehensive list of typical ingredients used in this dish
-2. Identify any ingredients that could be digestive triggers
+    const prompt = `You're an expert dietitian and you have to guess whether the following foods have any triggers for an ulcerative colitis patient. For each of the food listed below, can you try to guess what ingredients go in it typically and whether those ingredients are triggers for someone with UC and which of the food types they belong under?
 
-Common digestive trigger categories:
+Analyze the dish "${dishName}" and provide:
+1. A comprehensive list of typical ingredients used in this dish
+2. Identify any ingredients that could be UC triggers
+
+Common UC trigger categories:
 - Gluten (wheat, barley, rye, spelt)
 - Dairy (milk, cheese, butter, cream, yogurt)
 - FODMAPs (onions, garlic, beans, apples, wheat, etc.)
-- Spicy ingredients (chili, hot peppers)
+- Spicy ingredients (chili, hot peppers, spices)
 - High-fat ingredients
-- Processed meats
+- Processed meats (sausage, deli meat, bacon)
+- High-fiber foods (nuts, seeds, raw vegetables)
 - Artificial sweeteners
 - Caffeine
+- Alcohol
 
 Please respond in JSON format with this structure:
 {
@@ -35,9 +39,9 @@ Please respond in JSON format with this structure:
   "triggerIngredients": [
     {
       "ingredient": "ingredient_name",
-      "category": "gluten|dairy|fodmap|spicy|high_fat|processed|artificial|caffeine",
+      "category": "gluten|dairy|fodmap|spicy|high_fat|processed|high_fiber|artificial|caffeine|alcohol",
       "confidence": 0.8,
-      "reason": "brief explanation why this could trigger digestive issues"
+      "reason": "brief explanation why this could trigger UC flares"
     }
   ]
 }`;
@@ -47,7 +51,7 @@ Please respond in JSON format with this structure:
       messages: [
         {
           role: "system",
-          content: "You are a nutritionist and digestive health expert. Analyze dishes for ingredients and potential digestive triggers. Always respond with valid JSON."
+          content: "You are an expert dietitian specializing in ulcerative colitis. Analyze dishes for ingredients and potential UC triggers. Focus on foods that commonly trigger UC flares. Always respond with valid JSON."
         },
         {
           role: "user",
@@ -73,26 +77,30 @@ Please respond in JSON format with this structure:
 
 export async function analyzeTriggers(ingredients: string[]): Promise<IngredientAnalysis['triggerIngredients']> {
   try {
-    const prompt = `Analyze this list of ingredients for potential digestive triggers: ${ingredients.join(", ")}
+    const prompt = `You're an expert dietitian and you have to guess whether the following foods have any triggers for an ulcerative colitis patient. 
 
-Common digestive trigger categories:
+Analyze this list of ingredients for potential UC triggers: ${ingredients.join(", ")}
+
+Common UC trigger categories:
 - Gluten (wheat, barley, rye, spelt)
 - Dairy (milk, cheese, butter, cream, yogurt)
 - FODMAPs (onions, garlic, beans, apples, wheat, etc.)
-- Spicy ingredients (chili, hot peppers)
+- Spicy ingredients (chili, hot peppers, spices)
 - High-fat ingredients
-- Processed meats
+- Processed meats (sausage, deli meat, bacon)
+- High-fiber foods (nuts, seeds, raw vegetables)
 - Artificial sweeteners
 - Caffeine
+- Alcohol
 
 Please respond in JSON format:
 {
   "triggerIngredients": [
     {
       "ingredient": "ingredient_name",
-      "category": "gluten|dairy|fodmap|spicy|high_fat|processed|artificial|caffeine",
+      "category": "gluten|dairy|fodmap|spicy|high_fat|processed|high_fiber|artificial|caffeine|alcohol",
       "confidence": 0.8,
-      "reason": "brief explanation why this could trigger digestive issues"
+      "reason": "brief explanation why this could trigger UC flares"
     }
   ]
 }`;
@@ -102,7 +110,7 @@ Please respond in JSON format:
       messages: [
         {
           role: "system",
-          content: "You are a digestive health expert. Analyze ingredients for potential digestive triggers. Always respond with valid JSON."
+          content: "You are an expert dietitian specializing in ulcerative colitis. Analyze ingredients for potential UC triggers that commonly cause flares. Always respond with valid JSON."
         },
         {
           role: "user",
