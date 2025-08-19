@@ -15,10 +15,16 @@ export interface IngredientAnalysis {
 
 export async function analyzeIngredients(dishName: string): Promise<IngredientAnalysis> {
   try {
-    const prompt = `You're an expert dietitian and you have to guess whether the following foods have any triggers for an ulcerative colitis patient. For each of the food listed below, can you try to guess what ingredients go in it typically and whether those ingredients are triggers for someone with UC and which of the food types they belong under?
+    const prompt = `You're an expert dietitian and you have to guess whether the following foods OR DRINKS have any triggers for an ulcerative colitis patient. For each item listed below, can you try to guess what ingredients go in it typically and whether those ingredients are triggers for someone with UC and which of the food types they belong under?
 
-Analyze the dish "${dishName}" and provide:
-1. A comprehensive list of typical ingredients used in this dish
+This could be:
+- Food dishes (e.g., "chicken pasta", "Caesar salad")
+- Alcoholic drinks (e.g., "Manhattan cocktail", "Corona beer", "Chardonnay wine", "vodka tonic")
+- Non-alcoholic drinks (e.g., "Prime energy drink", "Coca Cola", "green smoothie", "coffee with milk")
+- Branded beverages (e.g., "Starbucks Frappuccino", "Red Bull", "Gatorade")
+
+Analyze the item "${dishName}" and provide:
+1. A comprehensive list of typical ingredients used in this food/drink
 2. Identify any ingredients that could be UC triggers
 
 Common UC trigger categories:
@@ -51,7 +57,7 @@ Please respond in JSON format with this structure:
       messages: [
         {
           role: "system",
-          content: "You are an expert dietitian specializing in ulcerative colitis. Analyze dishes for ingredients and potential UC triggers. Focus on foods that commonly trigger UC flares. Always respond with valid JSON."
+          content: "You are an expert dietitian specializing in ulcerative colitis. Analyze food dishes and beverages (alcoholic and non-alcoholic) for ingredients and potential UC triggers. For cocktails, include specific liquors and mixers. For branded drinks, include typical ingredients. Focus on items that commonly trigger UC flares. Always respond with valid JSON."
         },
         {
           role: "user",
@@ -133,7 +139,7 @@ Please respond in JSON format:
 function analyzeIngredientsFallback(dishName: string): IngredientAnalysis {
   const lowerDish = dishName.toLowerCase();
   
-  // Simple ingredient mapping
+  // Simple ingredient mapping for food and drinks
   const ingredientMap: Record<string, string[]> = {
     pizza: ["wheat flour", "mozzarella cheese", "tomato sauce", "olive oil"],
     pasta: ["wheat flour", "olive oil", "garlic", "tomato"],
@@ -142,6 +148,19 @@ function analyzeIngredientsFallback(dishName: string): IngredientAnalysis {
     soup: ["broth", "vegetables", "onion", "garlic"],
     rice: ["rice", "water", "salt"],
     chicken: ["chicken breast", "salt", "pepper"],
+    // Alcoholic drinks
+    beer: ["malt barley", "hops", "yeast", "water", "alcohol"],
+    wine: ["grapes", "yeast", "alcohol", "sulfites"],
+    cocktail: ["alcohol", "mixers", "sugar", "citrus"],
+    vodka: ["vodka", "alcohol"],
+    whiskey: ["whiskey", "alcohol", "grain"],
+    // Non-alcoholic drinks
+    coffee: ["coffee beans", "water", "caffeine"],
+    tea: ["tea leaves", "water", "caffeine"],
+    soda: ["carbonated water", "high fructose corn syrup", "artificial flavors", "caffeine"],
+    juice: ["fruit juice", "sugar", "citric acid"],
+    smoothie: ["fruit", "yogurt", "milk", "sugar"],
+    "energy drink": ["caffeine", "taurine", "sugar", "artificial flavors", "vitamins"],
   };
 
   let ingredients: string[] = [];
@@ -166,9 +185,12 @@ function analyzeTriggersFallback(ingredients: string[]): IngredientAnalysis['tri
   const triggers: IngredientAnalysis['triggerIngredients'] = [];
   
   const triggerMap = {
-    gluten: ["wheat", "flour", "bread", "pasta", "barley", "rye"],
+    gluten: ["wheat", "flour", "bread", "pasta", "barley", "rye", "malt"],
     dairy: ["cheese", "milk", "butter", "cream", "yogurt"],
     fodmap: ["onion", "garlic", "beans", "apple", "wheat"],
+    alcohol: ["alcohol", "beer", "wine", "vodka", "whiskey", "rum", "gin", "tequila"],
+    caffeine: ["coffee", "caffeine", "tea", "energy"],
+    artificial: ["high fructose corn syrup", "artificial flavors", "artificial sweeteners"],
   };
 
   ingredients.forEach(ingredient => {
