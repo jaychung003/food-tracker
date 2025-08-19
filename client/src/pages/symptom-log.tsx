@@ -103,7 +103,12 @@ export default function SymptomLog() {
 
         {/* Severity */}
         <div className="space-y-4">
-          <Label htmlFor="severity">Severity (1-10)</Label>
+          <div>
+            <Label htmlFor="severity">Overall Severity</Label>
+            <p className="text-sm text-gray-600 mt-1">
+              Rate the overall impact of this bowel movement (1 = minor discomfort, 10 = severe symptoms affecting daily activities)
+            </p>
+          </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600 w-4">1</span>
@@ -118,9 +123,11 @@ export default function SymptomLog() {
               />
               <span className="text-sm text-gray-600 w-6">10</span>
             </div>
-            <p className="text-center text-sm text-gray-600">
-              Current: <span className="font-medium">{severity}</span>
-            </p>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Mild</span>
+              <span className="font-medium text-gray-700">{severity}/10</span>
+              <span>Severe</span>
+            </div>
           </div>
         </div>
 
