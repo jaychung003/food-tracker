@@ -3,9 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertFoodEntrySchema, insertSymptomEntrySchema } from "@shared/schema";
 import { z } from "zod";
+import { analyzeIngredients, analyzeTriggers } from "./openai";
 
 // Food database simulation (in production would use Edamam/Spoonacular API)
-const foodDatabase = {
+const foodDatabase: Record<string, string[]> = {
   "oatmeal": ["oats", "water"],
   "caesar salad": ["romaine lettuce", "parmesan cheese", "croutons", "caesar dressing", "chicken"],
   "chicken rice bowl": ["chicken breast", "brown rice", "broccoli", "soy sauce"],
@@ -145,7 +146,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Food search and ingredients routes
+  // OpenAI-powered ingredient analysis
+  app.post("/api/food/analyze", async (req, res) => {
+    try {
+      const { dishName } = req.body;
+      if (!dishName || typeof dishName !== 'string') {
+        return res.status(400).json({ message: "Dish name is required" });
+      }
+
+      const analysis = await analyzeIngredients(dishName.trim());
+      res.json(analysis);
+    } catch (error) {
+      console.error("Ingredient analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze ingredients" });
+    }
+  });
+
+  app.post("/api/food/analyze-triggers", async (req, res) => {
+    try {
+      const { ingredients } = req.body;
+      if (!Array.isArray(ingredients)) {
+        return res.status(400).json({ message: "Ingredients array is required" });
+      }
+
+      const triggers = await analyzeTriggers(ingredients);
+      res.json({ triggerIngredients: triggers });
+    } catch (error) {
+      console.error("Trigger analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze triggers" });
+    }
+  });
+
+  // Food search and ingredients routes (legacy - kept for fallback)
   app.get("/api/food/search", async (req, res) => {
     try {
       const { q } = req.query;

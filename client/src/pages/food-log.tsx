@@ -7,13 +7,20 @@ import { Label } from "@/components/ui/label";
 import FoodSearch from "@/components/ui/food-search";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { X, Edit } from "lucide-react";
+import { X, Edit, Sparkles, AlertTriangle } from "lucide-react";
+
+interface TriggerIngredient {
+  ingredient: string;
+  category: string;
+  confidence: number;
+  reason: string;
+}
 
 export default function FoodLog() {
   const [, setLocation] = useLocation();
   const [dishName, setDishName] = useState("");
   const [ingredients, setIngredients] = useState<string[]>([]);
-  const [triggerIngredients, setTriggerIngredients] = useState<string[]>([]);
+  const [triggerIngredients, setTriggerIngredients] = useState<TriggerIngredient[]>([]);
   const [mealTime, setMealTime] = useState(() => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -46,11 +53,33 @@ export default function FoodLog() {
     },
   });
 
-  const handleFoodSelect = (selectedDish: string, detectedIngredients: string[], detectedTriggers: string[]) => {
+  const handleFoodSelect = (selectedDish: string, detectedIngredients: string[], detectedTriggers: TriggerIngredient[]) => {
     setDishName(selectedDish);
     setIngredients(detectedIngredients);
     setTriggerIngredients(detectedTriggers);
   };
+
+  // AI re-analysis mutation for edited ingredients
+  const reAnalyzeTriggersMutation = useMutation({
+    mutationFn: async (ingredientList: string[]) => {
+      const response = await apiRequest("POST", "/api/food/analyze-triggers", { ingredients: ingredientList });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setTriggerIngredients(data.triggerIngredients || []);
+      toast({
+        title: "Analysis Updated",
+        description: "Trigger ingredients analyzed with AI!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Analysis Failed",
+        description: "Could not analyze triggers. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +93,13 @@ export default function FoodLog() {
       return;
     }
 
+    // Convert trigger ingredients to simple string array for storage
+    const triggerNames = triggerIngredients.map(trigger => trigger.ingredient);
+    
     createFoodEntryMutation.mutate({
       dishName: dishName.trim(),
       ingredients,
-      triggerIngredients,
+      triggerIngredients: triggerNames,
       mealTime: new Date(mealTime).toISOString(),
     });
   };
@@ -119,30 +151,87 @@ export default function FoodLog() {
                   onChange={(e) => setIngredients(e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
                   placeholder="Enter ingredients separated by commas"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditingIngredients(false)}
-                >
-                  Done
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingIngredients(false);
+                      if (ingredients.length > 0) {
+                        reAnalyzeTriggersMutation.mutate(ingredients);
+                      }
+                    }}
+                    disabled={reAnalyzeTriggersMutation.isPending}
+                  >
+                    {reAnalyzeTriggersMutation.isPending ? (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1 animate-pulse" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Analyze with AI
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingIngredients(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {ingredients.map((ingredient, index) => (
-                  <span
-                    key={index}
-                    className={`px-3 py-1 text-sm rounded-full ${
-                      triggerIngredients.includes(ingredient)
-                        ? "bg-red-100 text-red-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
-                  >
-                    {ingredient}
-                    {triggerIngredients.includes(ingredient) && " (trigger)"}
-                  </span>
-                ))}
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {ingredients.map((ingredient, index) => {
+                    const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
+                    return (
+                      <span
+                        key={index}
+                        className={`px-3 py-1 text-sm rounded-full ${
+                          triggerInfo
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : "bg-green-100 text-green-700 border border-green-200"
+                        }`}
+                      >
+                        {ingredient}
+                        {triggerInfo && (
+                          <span className="ml-1 text-xs opacity-75">
+                            ({triggerInfo.category})
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+                
+                {/* Detailed trigger information */}
+                {triggerIngredients.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <h4 className="flex items-center text-sm font-medium text-red-900 mb-2">
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Potential Triggers Detected
+                    </h4>
+                    <div className="space-y-2">
+                      {triggerIngredients.map((trigger, index) => (
+                        <div key={index} className="text-xs text-red-700">
+                          <span className="font-medium capitalize">{trigger.ingredient}</span>
+                          <span className="mx-1">•</span>
+                          <span className="uppercase text-red-600">{trigger.category}</span>
+                          <span className="mx-1">•</span>
+                          <span>{Math.round(trigger.confidence * 100)}% confidence</span>
+                          <div className="mt-1 text-red-600 italic">{trigger.reason}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

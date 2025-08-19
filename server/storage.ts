@@ -107,7 +107,8 @@ export class MemStorage implements IStorage {
     const entry: FoodEntry = {
       ...insertEntry,
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      triggerIngredients: insertEntry.triggerIngredients || null
     };
     this.foodEntries.set(id, entry);
     return entry;
@@ -143,7 +144,9 @@ export class MemStorage implements IStorage {
     const entry: SymptomEntry = {
       ...insertEntry,
       id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      symptoms: insertEntry.symptoms || null,
+      notes: insertEntry.notes || null
     };
     this.symptomEntries.set(id, entry);
     return entry;
@@ -169,7 +172,13 @@ export class MemStorage implements IStorage {
 
   async createIngredient(insertIngredient: InsertIngredient): Promise<Ingredient> {
     const id = randomUUID();
-    const ingredient: Ingredient = { ...insertIngredient, id };
+    const ingredient: Ingredient = { 
+      ...insertIngredient, 
+      id,
+      description: insertIngredient.description || null,
+      category: insertIngredient.category || null,
+      isTrigger: insertIngredient.isTrigger || null
+    };
     this.ingredients.set(id, ingredient);
     return ingredient;
   }

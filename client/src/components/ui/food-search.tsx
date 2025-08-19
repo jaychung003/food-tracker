@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface FoodSearchProps {
   value: string;
   onChange: (value: string) => void;
-  onFoodSelect: (dish: string, ingredients: string[], triggerIngredients: string[]) => void;
+  onFoodSelect: (dish: string, ingredients: string[], triggerIngredients: any[]) => void;
+}
+
+interface TriggerIngredient {
+  ingredient: string;
+  category: string;
+  confidence: number;
+  reason: string;
 }
 
 export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearchProps) {
@@ -18,16 +26,34 @@ export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearch
     enabled: searchQuery.length > 1,
   });
 
-  const { data: ingredientsData } = useQuery({
-    queryKey: ["/api/food/ingredients", value.toLowerCase().replace(/\s+/g, "-")],
-    enabled: value.length > 0 && !showSuggestions,
+  // OpenAI-powered ingredient analysis
+  const analyzeIngredientsMutation = useMutation({
+    mutationFn: async (dishName: string) => {
+      const response = await apiRequest("POST", "/api/food/analyze", { dishName });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.ingredients && data.triggerIngredients) {
+        onFoodSelect(value, data.ingredients, data.triggerIngredients);
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to analyze ingredients:", error);
+      // Fallback to basic ingredient detection
+      onFoodSelect(value, [], []);
+    }
   });
 
+  // Trigger analysis when user stops typing
   useEffect(() => {
-    if (ingredientsData) {
-      onFoodSelect(value, ingredientsData.ingredients || [], ingredientsData.triggerIngredients || []);
+    if (value.length > 2 && !showSuggestions) {
+      const timeoutId = setTimeout(() => {
+        analyzeIngredientsMutation.mutate(value);
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [ingredientsData, value, onFoodSelect]);
+  }, [value, showSuggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -50,10 +76,16 @@ export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearch
         <Input
           value={value}
           onChange={handleInputChange}
-          placeholder="Search or enter dish name..."
+          placeholder="Enter dish name for AI analysis..."
           className="pr-10"
         />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+          {analyzeIngredientsMutation.isPending ? (
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+          ) : (
+            <Search className="w-4 h-4 text-gray-400" />
+          )}
+        </div>
       </div>
 
       {/* Suggestions Dropdown */}
