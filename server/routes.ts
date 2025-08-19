@@ -178,21 +178,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Food search and ingredients routes (legacy - kept for fallback)
-  app.get("/api/food/search", async (req, res) => {
+  app.get("/api/food/search/:query?", async (req, res) => {
     try {
-      const { q } = req.query;
-      if (!q || typeof q !== 'string') {
-        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      const query = req.params.query || req.query.q;
+      if (!query || typeof query !== 'string') {
+        return res.json([]); // Return empty array for invalid queries
       }
 
-      const query = q.toLowerCase();
+      const queryLower = query.toLowerCase();
       const matches = Object.keys(foodDatabase)
-        .filter(dish => dish.includes(query))
+        .filter(dish => dish.includes(queryLower))
         .slice(0, 10);
 
       res.json(matches);
     } catch (error) {
-      res.status(500).json({ message: "Failed to search foods" });
+      res.json([]);
     }
   });
 

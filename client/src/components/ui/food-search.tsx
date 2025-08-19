@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Search, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -22,7 +23,7 @@ export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearch
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: suggestions = [] } = useQuery<string[]>({
-    queryKey: ["/api/food/search", { q: searchQuery }],
+    queryKey: ["/api/food/search", searchQuery],
     enabled: searchQuery.length > 1,
   });
 
@@ -46,14 +47,15 @@ export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearch
 
   // Trigger analysis when user stops typing
   useEffect(() => {
-    if (value.length > 2 && !showSuggestions) {
+    if (value.length > 2) {
       const timeoutId = setTimeout(() => {
         analyzeIngredientsMutation.mutate(value);
-      }, 1000);
+        setShowSuggestions(false); // Hide suggestions after analysis starts
+      }, 2000);
       
       return () => clearTimeout(timeoutId);
     }
-  }, [value, showSuggestions]);
+  }, [value]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -72,20 +74,34 @@ export default function FoodSearch({ value, onChange, onFoodSelect }: FoodSearch
 
   return (
     <div className="relative">
-      <div className="relative">
-        <Input
-          value={value}
-          onChange={handleInputChange}
-          placeholder="Enter dish name for AI analysis..."
-          className="pr-10"
-        />
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          {analyzeIngredientsMutation.isPending ? (
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-          ) : (
-            <Search className="w-4 h-4 text-gray-400" />
-          )}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Input
+            value={value}
+            onChange={handleInputChange}
+            placeholder="Enter dish name for AI analysis..."
+            className="pr-10"
+          />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            {analyzeIngredientsMutation.isPending ? (
+              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            ) : (
+              <Search className="w-4 h-4 text-gray-400" />
+            )}
+          </div>
         </div>
+        {value.length > 2 && !analyzeIngredientsMutation.isPending && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => analyzeIngredientsMutation.mutate(value)}
+            className="shrink-0"
+          >
+            <Sparkles className="w-4 h-4 mr-1" />
+            AI
+          </Button>
+        )}
       </div>
 
       {/* Suggestions Dropdown */}
