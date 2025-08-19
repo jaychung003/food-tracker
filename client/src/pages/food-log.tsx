@@ -187,18 +187,18 @@ export default function FoodLog() {
         {dishName.trim() && ingredientMode === 'choose' && (
           <div className="bg-gray-50 p-4 rounded-lg border">
             <Label className="text-base font-medium mb-3 block">How would you like to add ingredients?</Label>
-            <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleAIDetection}
-                className="justify-start h-auto p-4"
+                className="flex-1 justify-start h-auto p-3"
               >
-                <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
                   <div className="text-left">
-                    <div className="font-medium">Use AI detection (recommended)</div>
-                    <div className="text-sm text-gray-600 mt-1">AI will analyze "{dishName}" and detect ingredients and UC triggers automatically</div>
+                    <div className="font-medium text-sm">AI detection</div>
+                    <div className="text-xs text-gray-600">Recommended</div>
                   </div>
                 </div>
               </Button>
@@ -207,13 +207,13 @@ export default function FoodLog() {
                 type="button"
                 variant="outline"
                 onClick={handleManualEntry}
-                className="justify-start h-auto p-4"
+                className="flex-1 justify-start h-auto p-3"
               >
-                <div className="flex items-start gap-3">
-                  <Edit className="w-5 h-5 text-gray-600 mt-0.5" />
+                <div className="flex items-center gap-2">
+                  <Edit className="w-4 h-4 text-gray-600" />
                   <div className="text-left">
-                    <div className="font-medium">Enter ingredients manually</div>
-                    <div className="text-sm text-gray-600 mt-1">Add ingredients yourself and skip AI analysis</div>
+                    <div className="font-medium text-sm">Manual entry</div>
+                    <div className="text-xs text-gray-600">Add yourself</div>
                   </div>
                 </div>
               </Button>
