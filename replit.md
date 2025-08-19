@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Trigger Detection**: Automated identification of common digestive triggers (gluten, dairy, FODMAP)
 - **Pattern Analysis**: Correlation analysis between food consumption and symptom occurrence
 - **Food Database**: Ingredient detection system for common meals and dishes
-- **Symptom Classification**: Bristol Stool Scale integration with UC-specific additional symptoms (urgency, blood, gas, cramping, nausea, fatigue, constipation) and overall severity tracking (1-10 scale measuring impact on daily activities)
+- **Symptom Classification**: Bristol Stool Scale integration with UC-specific additional symptoms (urgency, blood, gas, cramping, nausea, fatigue, constipation)
 
 ### Development Environment
 - **Build Tool**: Vite for fast development and optimized production builds

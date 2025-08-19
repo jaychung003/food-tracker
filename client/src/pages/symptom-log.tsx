@@ -15,7 +15,7 @@ export default function SymptomLog() {
   const [, setLocation] = useLocation();
   const [bristolType, setBristolType] = useState<number | null>(null);
   const [symptoms, setSymptoms] = useState<string[]>([]);
-  const [severity, setSeverity] = useState(5);
+
   const [notes, setNotes] = useState("");
   const [occurredAt, setOccurredAt] = useState(() => {
     const now = new Date();
@@ -63,7 +63,7 @@ export default function SymptomLog() {
     createSymptomEntryMutation.mutate({
       bristolType,
       symptoms,
-      severity,
+      severity: 5, // Default middle value since severity is still required by schema
       notes: notes.trim() || null,
       occurredAt: new Date(occurredAt).toISOString(),
     });
@@ -101,35 +101,7 @@ export default function SymptomLog() {
           />
         </div>
 
-        {/* Severity */}
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="severity">Overall Severity</Label>
-            <p className="text-sm text-gray-600 mt-1">
-              Rate the overall impact of this bowel movement (1 = minor discomfort, 10 = severe symptoms affecting daily activities)
-            </p>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600 w-4">1</span>
-              <input
-                id="severity"
-                type="range"
-                min="1"
-                max="10"
-                value={severity}
-                onChange={(e) => setSeverity(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <span className="text-sm text-gray-600 w-6">10</span>
-            </div>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Mild</span>
-              <span className="font-medium text-gray-700">{severity}/10</span>
-              <span>Severe</span>
-            </div>
-          </div>
-        </div>
+
 
         {/* Notes */}
         <div className="space-y-2">
