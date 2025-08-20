@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type FoodEntry, type InsertFoodEntry, type SymptomEntry, type InsertSymptomEntry, type Ingredient, type InsertIngredient } from "@shared/schema";
+import { type User, type InsertUser, type FoodEntry, type InsertFoodEntry, type SymptomEntry, type InsertSymptomEntry, type Ingredient, type InsertIngredient, type SavedDish, type InsertSavedDish } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -24,6 +24,13 @@ export interface IStorage {
   getIngredientsByCategory(category: string): Promise<Ingredient[]>;
   createIngredient(ingredient: InsertIngredient): Promise<Ingredient>;
   searchIngredients(query: string): Promise<Ingredient[]>;
+  
+  // Saved dishes methods
+  getSavedDishes(userId: string): Promise<SavedDish[]>;
+  getSavedDishByName(userId: string, dishName: string): Promise<SavedDish | undefined>;
+  createSavedDish(dish: InsertSavedDish): Promise<SavedDish>;
+  updateSavedDishUsage(id: string, userId: string): Promise<boolean>;
+  deleteSavedDish(id: string, userId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -31,12 +38,14 @@ export class MemStorage implements IStorage {
   private foodEntries: Map<string, FoodEntry>;
   private symptomEntries: Map<string, SymptomEntry>;
   private ingredients: Map<string, Ingredient>;
+  private savedDishes: Map<string, SavedDish>;
 
   constructor() {
     this.users = new Map();
     this.foodEntries = new Map();
     this.symptomEntries = new Map();
     this.ingredients = new Map();
+    this.savedDishes = new Map();
     
     // Initialize with common trigger ingredients
     this.initializeIngredients();
@@ -190,6 +199,53 @@ export class MemStorage implements IStorage {
         ingredient.name.toLowerCase().includes(lowerQuery) ||
         ingredient.description?.toLowerCase().includes(lowerQuery)
       );
+  }
+
+  // Saved dishes methods
+  async getSavedDishes(userId: string): Promise<SavedDish[]> {
+    return Array.from(this.savedDishes.values())
+      .filter(dish => dish.userId === userId)
+      .sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime());
+  }
+
+  async getSavedDishByName(userId: string, dishName: string): Promise<SavedDish | undefined> {
+    return Array.from(this.savedDishes.values())
+      .find(dish => dish.userId === userId && dish.dishName.toLowerCase() === dishName.toLowerCase());
+  }
+
+  async createSavedDish(insertSavedDish: InsertSavedDish): Promise<SavedDish> {
+    const id = randomUUID();
+    const now = new Date();
+    const savedDish: SavedDish = { 
+      ...insertSavedDish, 
+      id,
+      triggerIngredients: insertSavedDish.triggerIngredients || [],
+      aiDetectedIngredients: insertSavedDish.aiDetectedIngredients || [],
+      timesUsed: insertSavedDish.timesUsed || 1,
+      lastUsedAt: now,
+      createdAt: now
+    };
+    this.savedDishes.set(id, savedDish);
+    return savedDish;
+  }
+
+  async updateSavedDishUsage(id: string, userId: string): Promise<boolean> {
+    const savedDish = this.savedDishes.get(id);
+    if (savedDish && savedDish.userId === userId) {
+      savedDish.timesUsed += 1;
+      savedDish.lastUsedAt = new Date();
+      return true;
+    }
+    return false;
+  }
+
+  async deleteSavedDish(id: string, userId: string): Promise<boolean> {
+    const savedDish = this.savedDishes.get(id);
+    if (savedDish && savedDish.userId === userId) {
+      this.savedDishes.delete(id);
+      return true;
+    }
+    return false;
   }
 }
 

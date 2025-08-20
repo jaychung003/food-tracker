@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import FoodSearch from "@/components/ui/food-search";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { X, Edit, Sparkles, AlertTriangle, Plus } from "lucide-react";
+import { X, Edit, Sparkles, AlertTriangle, Plus, History } from "lucide-react";
+import { SavedDishes } from "@/components/ui/saved-dishes";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TriggerIngredient {
   ingredient: string;
@@ -29,6 +31,7 @@ export default function FoodLog() {
   const [showAISuggestion, setShowAISuggestion] = useState(true);
   const [newIngredient, setNewIngredient] = useState("");
   const [aiDetectedIngredients, setAiDetectedIngredients] = useState<string[]>([]);
+  const [showSavedDishes, setShowSavedDishes] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -164,6 +167,34 @@ export default function FoodLog() {
     },
   });
 
+  const handleSelectSavedDish = (savedDish: any) => {
+    setDishName(savedDish.dishName);
+    setIngredients(savedDish.ingredients);
+    setAiDetectedIngredients(savedDish.aiDetectedIngredients);
+    
+    // Convert trigger ingredient names back to full objects
+    const triggerObjects = savedDish.triggerIngredients.map((name: string) => ({
+      ingredient: name,
+      category: "saved", // We could enhance this by storing full trigger data
+      confidence: 1.0,
+      reason: "Previously identified trigger"
+    }));
+    setTriggerIngredients(triggerObjects);
+    setShowSavedDishes(false);
+    
+    toast({
+      title: "Dish Loaded",
+      description: `Loaded "${savedDish.dishName}" with ${savedDish.ingredients.length} ingredients`,
+    });
+  };
+
+  const handleSaveDish = () => {
+    toast({
+      title: "Dish Saved",
+      description: `"${dishName}" saved for future use!`,
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -220,6 +251,31 @@ export default function FoodLog() {
             required
           />
         </div>
+
+        {/* Saved Dishes */}
+        <Collapsible open={showSavedDishes} onOpenChange={setShowSavedDishes}>
+          <CollapsibleTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start"
+            >
+              <History className="w-4 h-4 mr-2" />
+              Use saved dish
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <SavedDishes
+              onSelectDish={handleSelectSavedDish}
+              onSaveDish={handleSaveDish}
+              currentDishName={dishName}
+              currentIngredients={ingredients}
+              currentTriggers={triggerIngredients.map(t => t.ingredient)}
+              currentAiIngredients={aiDetectedIngredients}
+              showSaveOption={ingredients.length > 0 && dishName.trim().length > 0}
+            />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Ingredients Section */}
         <div className="space-y-3">

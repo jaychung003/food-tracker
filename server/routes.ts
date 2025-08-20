@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertFoodEntrySchema, insertSymptomEntrySchema } from "@shared/schema";
+import { insertFoodEntrySchema, insertSymptomEntrySchema, insertSavedDishSchema } from "@shared/schema";
 import { z } from "zod";
 import { analyzeIngredients, analyzeTriggers } from "./openai";
 
@@ -247,6 +247,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(ingredients);
     } catch (error) {
       res.status(500).json({ message: "Failed to search ingredients" });
+    }
+  });
+
+  // Saved dishes routes
+  app.get("/api/saved-dishes", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const dishes = await storage.getSavedDishes(userId);
+      res.json(dishes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch saved dishes" });
+    }
+  });
+
+  app.post("/api/saved-dishes", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const validatedData = insertSavedDishSchema.parse({
+        ...req.body,
+        userId
+      });
+
+      const savedDish = await storage.createSavedDish(validatedData);
+      res.json(savedDish);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid saved dish data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create saved dish" });
+    }
+  });
+
+  app.put("/api/saved-dishes/:id/use", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const success = await storage.updateSavedDishUsage(req.params.id, userId);
+      if (success) {
+        res.json({ message: "Saved dish usage updated" });
+      } else {
+        res.status(404).json({ message: "Saved dish not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update saved dish usage" });
+    }
+  });
+
+  app.delete("/api/saved-dishes/:id", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const success = await storage.deleteSavedDish(req.params.id, userId);
+      if (success) {
+        res.json({ message: "Saved dish deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Saved dish not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete saved dish" });
     }
   });
 

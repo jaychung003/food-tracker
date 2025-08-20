@@ -20,6 +20,18 @@ export const foodEntries = pgTable("food_entries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const savedDishes = pgTable("saved_dishes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  dishName: text("dish_name").notNull(),
+  ingredients: text("ingredients").array().notNull(),
+  triggerIngredients: text("trigger_ingredients").array().default([]),
+  aiDetectedIngredients: text("ai_detected_ingredients").array().default([]),
+  timesUsed: integer("times_used").default(1).notNull(),
+  lastUsedAt: timestamp("last_used_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const symptomEntries = pgTable("symptom_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),
@@ -54,6 +66,12 @@ export const insertSymptomEntrySchema = createInsertSchema(symptomEntries).omit(
   createdAt: true,
 });
 
+export const insertSavedDishSchema = createInsertSchema(savedDishes).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
 export const insertIngredientSchema = createInsertSchema(ingredients).omit({
   id: true,
 });
@@ -64,5 +82,7 @@ export type InsertFoodEntry = z.infer<typeof insertFoodEntrySchema>;
 export type FoodEntry = typeof foodEntries.$inferSelect;
 export type InsertSymptomEntry = z.infer<typeof insertSymptomEntrySchema>;
 export type SymptomEntry = typeof symptomEntries.$inferSelect;
+export type InsertSavedDish = z.infer<typeof insertSavedDishSchema>;
+export type SavedDish = typeof savedDishes.$inferSelect;
 export type InsertIngredient = z.infer<typeof insertIngredientSchema>;
 export type Ingredient = typeof ingredients.$inferSelect;
