@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import BristolScale from "@/components/ui/bristol-scale";
 import SymptomSelector from "@/components/ui/symptom-selector";
+import SymptomSeverityScale from "@/components/ui/symptom-severity-scale";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { X } from "lucide-react";
@@ -15,7 +16,9 @@ export default function SymptomLog() {
   const [, setLocation] = useLocation();
   const [bristolType, setBristolType] = useState<number | null>(null);
   const [symptoms, setSymptoms] = useState<string[]>([]);
-
+  const [urgencySeverity, setUrgencySeverity] = useState(2);
+  const [bloodSeverity, setBloodSeverity] = useState(2);
+  const [painSeverity, setPainSeverity] = useState(2);
   const [notes, setNotes] = useState("");
   const [occurredAt, setOccurredAt] = useState(() => {
     const now = new Date();
@@ -64,6 +67,9 @@ export default function SymptomLog() {
       bristolType,
       symptoms,
       severity: 5, // Default middle value since severity is still required by schema
+      urgencySeverity,
+      bloodSeverity,
+      painSeverity,
       notes: notes.trim() || null,
       occurredAt: new Date(occurredAt).toISOString(),
     });
@@ -99,6 +105,32 @@ export default function SymptomLog() {
             selectedSymptoms={symptoms}
             onSymptomsChange={setSymptoms}
           />
+        </div>
+
+        {/* Symptom Severity Scales */}
+        <div className="space-y-6">
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium mb-4">Symptom Severity</h3>
+            <div className="space-y-4">
+              <SymptomSeverityScale
+                label="Urgency"
+                value={urgencySeverity}
+                onChange={setUrgencySeverity}
+              />
+              
+              <SymptomSeverityScale
+                label="Blood"
+                value={bloodSeverity}
+                onChange={setBloodSeverity}
+              />
+              
+              <SymptomSeverityScale
+                label="Pain"
+                value={painSeverity}
+                onChange={setPainSeverity}
+              />
+            </div>
+          </div>
         </div>
 
 

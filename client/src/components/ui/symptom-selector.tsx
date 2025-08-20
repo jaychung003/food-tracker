@@ -6,11 +6,8 @@ interface SymptomSelectorProps {
 export default function SymptomSelector({ selectedSymptoms, onSymptomsChange }: SymptomSelectorProps) {
   const availableSymptoms = [
     "Gas", 
-    "Cramping",
     "Nausea",
-    "Urgency",
     "Fatigue",
-    "Blood",
     "Constipation",
   ];
 

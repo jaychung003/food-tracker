@@ -37,7 +37,10 @@ export const symptomEntries = pgTable("symptom_entries", {
   userId: varchar("user_id").notNull(),
   bristolType: integer("bristol_type").notNull(), // 1-7
   symptoms: text("symptoms").array().default([]),
-  severity: integer("severity").notNull(), // 1-10
+  severity: integer("severity").notNull(), // 1-10 (kept for backward compatibility)
+  urgencySeverity: integer("urgency_severity").default(2), // 1-3 scale
+  bloodSeverity: integer("blood_severity").default(2), // 1-3 scale
+  painSeverity: integer("pain_severity").default(2), // 1-3 scale (renamed from cramping)
   notes: text("notes"),
   occurredAt: timestamp("occurred_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
