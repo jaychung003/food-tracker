@@ -32,9 +32,20 @@ export default function FoodLog() {
   const [newIngredient, setNewIngredient] = useState("");
   const [aiDetectedIngredients, setAiDetectedIngredients] = useState<string[]>([]);
   const [showSavedDishes, setShowSavedDishes] = useState(false);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteResults, setAutocompleteResults] = useState<any[]>([]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Query to get saved dishes for autocomplete
+  const { data: savedDishes = [] } = useQuery({
+    queryKey: ["/api/saved-dishes"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/saved-dishes");
+      return response.json();
+    },
+  });
 
   const createFoodEntryMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -207,11 +218,41 @@ export default function FoodLog() {
     }));
     setTriggerIngredients(triggerObjects);
     setShowSavedDishes(false);
+    setShowAutocomplete(false);
+    
+    // Update usage counter
+    apiRequest("PUT", `/api/saved-dishes/${savedDish.id}/use`);
+    queryClient.invalidateQueries({ queryKey: ["/api/saved-dishes"] });
     
     toast({
       title: "Dish Loaded",
       description: `Loaded "${savedDish.dishName}" with ${savedDish.ingredients.length} ingredients`,
     });
+  };
+
+  const handleDishNameChange = (value: string) => {
+    setDishName(value);
+    
+    // Clear ingredients when changing dish name
+    if (ingredients.length > 0) {
+      setIngredients([]);
+      setAiDetectedIngredients([]);
+      setTriggerIngredients([]);
+      setShowAISuggestion(true);
+    }
+    
+    // Show autocomplete suggestions
+    if (value.trim().length > 0) {
+      const filtered = savedDishes.filter((dish: any) =>
+        dish.dishName.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 5); // Limit to 5 suggestions
+      
+      setAutocompleteResults(filtered);
+      setShowAutocomplete(filtered.length > 0);
+    } else {
+      setShowAutocomplete(false);
+      setAutocompleteResults([]);
+    }
   };
 
 
@@ -254,23 +295,57 @@ export default function FoodLog() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Step 1: Dish Name */}
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <Label htmlFor="dish-name">Dish or drink name</Label>
           <Input
             id="dish-name"
             value={dishName}
-            onChange={(e) => {
-              setDishName(e.target.value);
-              if (ingredients.length > 0) {
-                setIngredients([]);
-                setAiDetectedIngredients([]);
-                setTriggerIngredients([]);
-                setShowAISuggestion(true);
+            onChange={(e) => handleDishNameChange(e.target.value)}
+            onFocus={() => {
+              if (dishName.trim().length > 0 && autocompleteResults.length > 0) {
+                setShowAutocomplete(true);
               }
+            }}
+            onBlur={() => {
+              // Delay hiding to allow clicking on suggestions
+              setTimeout(() => setShowAutocomplete(false), 200);
             }}
             placeholder="e.g., chicken pasta, coffee, Prime energy drink"
             required
           />
+          
+          {/* Autocomplete Dropdown */}
+          {showAutocomplete && autocompleteResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+              {autocompleteResults.map((dish: any) => (
+                <div
+                  key={dish.id}
+                  className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                  onClick={() => handleSelectSavedDish(dish)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{dish.dishName}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {dish.ingredients.length} ingredients
+                        </span>
+                        {dish.triggerIngredients.length > 0 && (
+                          <span className="text-xs bg-red-100 text-red-600 px-1 rounded">
+                            {dish.triggerIngredients.length} triggers
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-400">
+                          Used {dish.timesUsed}x
+                        </span>
+                      </div>
+                    </div>
+                    <History className="w-4 h-4 text-gray-400" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Saved Dishes */}
