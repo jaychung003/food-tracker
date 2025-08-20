@@ -38,15 +38,41 @@ export default function FoodLog() {
 
   const createFoodEntryMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Save food entry
       const response = await apiRequest("POST", "/api/food-entries", data);
-      return response.json();
+      const foodEntry = await response.json();
+      
+      // Also save as a reusable dish
+      const savedDishData = {
+        dishName: data.dishName,
+        ingredients: data.ingredients,
+        triggerIngredients: data.triggerIngredients,
+        aiDetectedIngredients: aiDetectedIngredients
+      };
+      
+      // Check if this dish already exists
+      const existingDishes = await apiRequest("GET", "/api/saved-dishes").then(r => r.json());
+      const existingDish = existingDishes.find((dish: any) => 
+        dish.dishName.toLowerCase() === data.dishName.toLowerCase()
+      );
+      
+      if (existingDish) {
+        // Update usage count for existing dish
+        await apiRequest("PUT", `/api/saved-dishes/${existingDish.id}/use`);
+      } else {
+        // Create new saved dish
+        await apiRequest("POST", "/api/saved-dishes", savedDishData);
+      }
+      
+      return foodEntry;
     },
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Food entry saved successfully!",
+        description: "Food logged and saved for future use!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/food-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saved-dishes"] });
       setLocation("/");
     },
     onError: () => {
@@ -188,12 +214,7 @@ export default function FoodLog() {
     });
   };
 
-  const handleSaveDish = () => {
-    toast({
-      title: "Dish Saved",
-      description: `"${dishName}" saved for future use!`,
-    });
-  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,12 +288,6 @@ export default function FoodLog() {
           <CollapsibleContent className="mt-3">
             <SavedDishes
               onSelectDish={handleSelectSavedDish}
-              onSaveDish={handleSaveDish}
-              currentDishName={dishName}
-              currentIngredients={ingredients}
-              currentTriggers={triggerIngredients.map(t => t.ingredient)}
-              currentAiIngredients={aiDetectedIngredients}
-              showSaveOption={ingredients.length > 0 && dishName.trim().length > 0}
             />
           </CollapsibleContent>
         </Collapsible>

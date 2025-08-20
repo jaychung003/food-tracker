@@ -20,27 +20,10 @@ interface SavedDish {
 
 interface SavedDishesProps {
   onSelectDish: (dish: SavedDish) => void;
-  onSaveDish: (dishData: {
-    dishName: string;
-    ingredients: string[];
-    triggerIngredients: string[];
-    aiDetectedIngredients: string[];
-  }) => void;
-  currentDishName?: string;
-  currentIngredients?: string[];
-  currentTriggers?: string[];
-  currentAiIngredients?: string[];
-  showSaveOption?: boolean;
 }
 
 export function SavedDishes({
-  onSelectDish,
-  onSaveDish,
-  currentDishName,
-  currentIngredients = [],
-  currentTriggers = [],
-  currentAiIngredients = [],
-  showSaveOption = false
+  onSelectDish
 }: SavedDishesProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
@@ -62,27 +45,7 @@ export function SavedDishes({
     },
   });
 
-  const saveDishMutation = useMutation({
-    mutationFn: async (dishData: any) => {
-      return apiRequest("POST", "/api/saved-dishes", dishData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/saved-dishes"] });
-    },
-  });
 
-  const handleSaveDish = () => {
-    if (currentDishName && currentIngredients.length > 0) {
-      const dishData = {
-        dishName: currentDishName,
-        ingredients: currentIngredients,
-        triggerIngredients: currentTriggers,
-        aiDetectedIngredients: currentAiIngredients,
-      };
-      saveDishMutation.mutate(dishData);
-      onSaveDish(dishData);
-    }
-  };
 
   const handleSelectDish = (dish: SavedDish) => {
     // Update usage counter
@@ -101,26 +64,6 @@ export function SavedDishes({
 
   return (
     <div className="space-y-4">
-      {/* Save Current Dish Option */}
-      {showSaveOption && currentDishName && currentIngredients.length > 0 && (
-        <Card className="p-3 bg-blue-50 border-blue-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-900">Save "{currentDishName}" for later?</p>
-              <p className="text-xs text-blue-700">
-                {currentIngredients.length} ingredients • {currentTriggers.length} triggers detected
-              </p>
-            </div>
-            <Button
-              size="sm"
-              onClick={handleSaveDish}
-              disabled={saveDishMutation.isPending}
-            >
-              {saveDishMutation.isPending ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </Card>
-      )}
 
       {/* Search Bar */}
       {savedDishes.length > 0 && (
@@ -138,7 +81,7 @@ export function SavedDishes({
       {/* Saved Dishes List */}
       {filteredDishes.length > 0 ? (
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          <Label className="text-sm font-medium">Recent dishes ({filteredDishes.length})</Label>
+          <Label className="text-sm font-medium">Previously logged dishes ({filteredDishes.length})</Label>
           {filteredDishes.map((dish: SavedDish) => (
             <Card
               key={dish.id}
@@ -204,8 +147,8 @@ export function SavedDishes({
         </div>
       ) : savedDishes.length === 0 ? (
         <div className="text-center py-6 text-gray-500">
-          <p className="text-sm">No saved dishes yet</p>
-          <p className="text-xs">Save your favorite meals to reuse them quickly!</p>
+          <p className="text-sm">No previous meals logged yet</p>
+          <p className="text-xs">Log your first meal and it will appear here for easy reuse!</p>
         </div>
       ) : (
         <div className="text-center py-4 text-gray-500">
