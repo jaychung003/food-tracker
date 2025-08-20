@@ -28,6 +28,7 @@ export default function FoodLog() {
   });
   const [showAISuggestion, setShowAISuggestion] = useState(true);
   const [newIngredient, setNewIngredient] = useState("");
+  const [aiDetectedIngredients, setAiDetectedIngredients] = useState<string[]>([]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -57,6 +58,7 @@ export default function FoodLog() {
   const handleFoodSelect = (selectedDish: string, detectedIngredients: string[], detectedTriggers: TriggerIngredient[]) => {
     setDishName(selectedDish);
     setIngredients(detectedIngredients);
+    setAiDetectedIngredients(detectedIngredients); // Mark all as AI-detected
     setTriggerIngredients(detectedTriggers);
     setShowAISuggestion(false);
   };
@@ -80,20 +82,23 @@ export default function FoodLog() {
         const newIngredients = result.ingredients || [];
         const mergedIngredients = [...ingredients];
         
+        const newAiIngredients: string[] = [];
         newIngredients.forEach((ingredient: string) => {
           if (!mergedIngredients.some(existing => 
             existing.toLowerCase() === ingredient.toLowerCase())) {
             mergedIngredients.push(ingredient);
+            newAiIngredients.push(ingredient);
           }
         });
         
         setIngredients(mergedIngredients);
+        setAiDetectedIngredients([...aiDetectedIngredients, ...newAiIngredients]);
         setTriggerIngredients(result.triggerIngredients || []);
         setShowAISuggestion(false);
         
         toast({
           title: "AI Detection Complete",
-          description: `Added ${mergedIngredients.length - ingredients.length} new ingredients`,
+          description: `Added ${newAiIngredients.length} new ingredients`,
         });
       }
     } catch (error) {
@@ -107,8 +112,11 @@ export default function FoodLog() {
   };
 
   const removeIngredient = (indexToRemove: number) => {
+    const removedIngredient = ingredients[indexToRemove];
     const updatedIngredients = ingredients.filter((_, index) => index !== indexToRemove);
     setIngredients(updatedIngredients);
+    // Also remove from AI-detected list if it exists there
+    setAiDetectedIngredients(aiDetectedIngredients.filter(ai => ai !== removedIngredient));
     // Re-analyze triggers after ingredient removal
     if (updatedIngredients.length > 0) {
       reAnalyzeTriggersMutation.mutate(updatedIngredients);
@@ -203,6 +211,7 @@ export default function FoodLog() {
               setDishName(e.target.value);
               if (ingredients.length > 0) {
                 setIngredients([]);
+                setAiDetectedIngredients([]);
                 setTriggerIngredients([]);
                 setShowAISuggestion(true);
               }
@@ -237,6 +246,7 @@ export default function FoodLog() {
                 <div className="flex flex-wrap gap-2">
                   {ingredients.map((ingredient, index) => {
                     const triggerInfo = triggerIngredients.find(t => t.ingredient.toLowerCase() === ingredient.toLowerCase());
+                    const isAiDetected = aiDetectedIngredients.includes(ingredient);
                     return (
                       <div
                         key={index}
@@ -244,8 +254,11 @@ export default function FoodLog() {
                           triggerInfo
                             ? "bg-red-100 text-red-700 border border-red-200"
                             : "bg-green-100 text-green-700 border border-green-200"
-                        }`}
+                        } ${isAiDetected ? 'relative' : ''}`}
                       >
+                        {isAiDetected && (
+                          <Sparkles className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                        )}
                         <span>
                           {ingredient}
                           {triggerInfo && (
@@ -257,7 +270,7 @@ export default function FoodLog() {
                         <button
                           type="button"
                           onClick={() => removeIngredient(index)}
-                          className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-red-200 hover:text-red-800 transition-colors"
+                          className="flex items-center justify-center w-4 h-4 rounded-full hover:bg-red-200 hover:text-red-800 transition-colors flex-shrink-0 ml-1"
                         >
                           <X className="w-3 h-3" />
                         </button>
