@@ -68,17 +68,41 @@ export default function FoodLog() {
       const response = await fetch('/api/food/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dishName: dishName.trim() })
+        body: JSON.stringify({ 
+          dishName: dishName.trim(),
+          existingIngredients: ingredients.length > 0 ? ingredients : undefined
+        })
       });
       
       if (response.ok) {
         const result = await response.json();
-        setIngredients(result.ingredients || []);
+        // Merge AI-detected ingredients with existing ones, avoiding duplicates
+        const newIngredients = result.ingredients || [];
+        const mergedIngredients = [...ingredients];
+        
+        newIngredients.forEach((ingredient: string) => {
+          if (!mergedIngredients.some(existing => 
+            existing.toLowerCase() === ingredient.toLowerCase())) {
+            mergedIngredients.push(ingredient);
+          }
+        });
+        
+        setIngredients(mergedIngredients);
         setTriggerIngredients(result.triggerIngredients || []);
         setShowAISuggestion(false);
+        
+        toast({
+          title: "AI Detection Complete",
+          description: `Added ${mergedIngredients.length - ingredients.length} new ingredients`,
+        });
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
+      toast({
+        title: "AI Detection Failed",
+        description: "Could not detect ingredients. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -192,7 +216,7 @@ export default function FoodLog() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-base font-medium">Ingredients</Label>
-            {dishName.trim() && showAISuggestion && ingredients.length === 0 && (
+            {dishName.trim() && (
               <Button
                 type="button"
                 variant="outline"
@@ -201,7 +225,7 @@ export default function FoodLog() {
                 className="flex items-center gap-1"
               >
                 <Sparkles className="w-4 h-4" />
-                AI detect
+                {ingredients.length === 0 ? "AI detect" : "Add more with AI"}
               </Button>
             )}
           </div>
@@ -264,7 +288,7 @@ export default function FoodLog() {
               </div>
               
               {/* Show AI suggestion if no ingredients */}
-              {ingredients.length === 0 && dishName.trim() && showAISuggestion && (
+              {ingredients.length === 0 && dishName.trim() && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                   <p className="text-sm text-blue-700 mb-2">
                     <Sparkles className="w-4 h-4 inline mr-1" />
@@ -282,7 +306,7 @@ export default function FoodLog() {
               )}
               
               {/* Empty state */}
-              {ingredients.length === 0 && (!dishName.trim() || !showAISuggestion) && (
+              {ingredients.length === 0 && !dishName.trim() && (
                 <p className="text-sm text-gray-500 text-center py-4">
                   Add ingredients to continue
                 </p>

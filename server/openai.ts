@@ -13,8 +13,12 @@ export interface IngredientAnalysis {
   }[];
 }
 
-export async function analyzeIngredients(dishName: string): Promise<IngredientAnalysis> {
+export async function analyzeIngredients(dishName: string, existingIngredients?: string[]): Promise<IngredientAnalysis> {
   try {
+    const existingIngredientsText = existingIngredients && existingIngredients.length > 0 
+      ? `\n\nUser may have already provided a starting point for the ingredient list: [${existingIngredients.join(', ')}]. Reference it and ensure you don't add any duplicate entries of ingredients - only add NEW ingredients that aren't already listed.` 
+      : '';
+
     const prompt = `You're an expert dietitian and you have to guess whether the following foods OR DRINKS have any triggers for an ulcerative colitis patient. For each item listed below, can you try to guess what ingredients go in it typically and whether those ingredients are triggers for someone with UC and which of the food types they belong under?
 
 This could be:
@@ -25,7 +29,7 @@ This could be:
 
 Analyze the item "${dishName}" and provide:
 1. A comprehensive list of typical ingredients used in this food/drink
-2. Identify any ingredients that could be UC triggers
+2. Identify any ingredients that could be UC triggers${existingIngredientsText}
 
 Common UC trigger categories:
 - Gluten (wheat, barley, rye, spelt)

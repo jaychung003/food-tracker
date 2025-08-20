@@ -149,12 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI-powered ingredient analysis
   app.post("/api/food/analyze", async (req, res) => {
     try {
-      const { dishName } = req.body;
+      const { dishName, existingIngredients } = req.body;
       if (!dishName || typeof dishName !== 'string') {
         return res.status(400).json({ message: "Dish name is required" });
       }
 
-      const analysis = await analyzeIngredients(dishName.trim());
+      const analysis = await analyzeIngredients(dishName.trim(), existingIngredients);
       res.json(analysis);
     } catch (error) {
       console.error("Ingredient analysis error:", error);
