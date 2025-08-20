@@ -107,31 +107,39 @@ export default function SymptomLog() {
           />
         </div>
 
-        {/* Symptom Severity Scales */}
-        <div className="space-y-6">
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium mb-4">Symptom Severity</h3>
-            <div className="space-y-4">
-              <SymptomSeverityScale
-                label="Urgency"
-                value={urgencySeverity}
-                onChange={setUrgencySeverity}
-              />
-              
-              <SymptomSeverityScale
-                label="Blood"
-                value={bloodSeverity}
-                onChange={setBloodSeverity}
-              />
-              
-              <SymptomSeverityScale
-                label="Pain"
-                value={painSeverity}
-                onChange={setPainSeverity}
-              />
+        {/* Symptom Severity Scales - Only show if corresponding symptom is selected */}
+        {(symptoms.includes("Urgency") || symptoms.includes("Blood") || symptoms.includes("Pain")) && (
+          <div className="space-y-6">
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-medium mb-4">Symptom Severity</h3>
+              <div className="space-y-4">
+                {symptoms.includes("Urgency") && (
+                  <SymptomSeverityScale
+                    label="Urgency"
+                    value={urgencySeverity}
+                    onChange={setUrgencySeverity}
+                  />
+                )}
+                
+                {symptoms.includes("Blood") && (
+                  <SymptomSeverityScale
+                    label="Blood"
+                    value={bloodSeverity}
+                    onChange={setBloodSeverity}
+                  />
+                )}
+                
+                {symptoms.includes("Pain") && (
+                  <SymptomSeverityScale
+                    label="Pain"
+                    value={painSeverity}
+                    onChange={setPainSeverity}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
 
 

@@ -9,6 +9,9 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange }: 
     "Nausea",
     "Fatigue",
     "Constipation",
+    "Urgency",
+    "Blood", 
+    "Pain",
   ];
 
   const toggleSymptom = (symptom: string) => {
@@ -21,12 +24,13 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange }: 
 
   const getSymptomStyle = (symptom: string) => {
     const isSelected = selectedSymptoms.includes(symptom);
+    const hasSeverityScale = ['Urgency', 'Blood', 'Pain'].includes(symptom);
     
     if (isSelected) {
-      // Color-code based on symptom severity/type
-      if (['Cramping', 'Stomach Pain'].includes(symptom)) {
-        return "bg-red-100 text-red-700 border-red-200";
-      } else if (['Bloating', 'Nausea'].includes(symptom)) {
+      // Color-code based on symptom type
+      if (hasSeverityScale) {
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      } else if (['Nausea'].includes(symptom)) {
         return "bg-orange-100 text-orange-700 border-orange-200";
       } else {
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
@@ -38,16 +42,22 @@ export default function SymptomSelector({ selectedSymptoms, onSymptomsChange }: 
 
   return (
     <div className="flex flex-wrap gap-2">
-      {availableSymptoms.map((symptom) => (
-        <button
-          key={symptom}
-          type="button"
-          onClick={() => toggleSymptom(symptom)}
-          className={`px-3 py-2 rounded-lg text-sm border transition-colors ${getSymptomStyle(symptom)}`}
-        >
-          {symptom}
-        </button>
-      ))}
+      {availableSymptoms.map((symptom) => {
+        const hasSeverityScale = ['Urgency', 'Blood', 'Pain'].includes(symptom);
+        return (
+          <button
+            key={symptom}
+            type="button"
+            onClick={() => toggleSymptom(symptom)}
+            className={`px-3 py-2 rounded-lg text-sm border transition-colors ${getSymptomStyle(symptom)} relative`}
+          >
+            {symptom}
+            {hasSeverityScale && (
+              <span className="ml-1 text-xs opacity-70">1-3</span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
