@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { BarChart3, Clock, Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import { BarChart3, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, Upload } from "lucide-react";
 import type { TagCorrelationResult, CorrelationAnalysisSettings } from "@shared/schema";
 
 interface CorrelationResponse {
@@ -108,6 +108,19 @@ export default function CorrelationPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={async () => {
+              const response = await fetch("/api/import-csv-data", { method: "POST" });
+              if (response.ok) {
+                queryClient.invalidateQueries({ queryKey: ["/api/analysis/coverage"] });
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Import CSV Data
+          </Button>
           <Button 
             variant="outline"
             onClick={async () => {
