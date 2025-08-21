@@ -9,6 +9,7 @@ import FoodLog from "@/pages/food-log";
 import SymptomLog from "@/pages/symptom-log";
 import Analysis from "@/pages/analysis";
 import Timeline from "@/pages/timeline";
+import Correlation from "@/pages/correlation";
 import MobileLayout from "@/components/layout/mobile-layout";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/symptom-log" component={SymptomLog} />
       <Route path="/analysis" component={Analysis} />
       <Route path="/timeline" component={Timeline} />
+      <Route path="/correlation" component={Correlation} />
       <Route component={NotFound} />
     </Switch>
   );

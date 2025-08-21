@@ -102,6 +102,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Development Progress (August 2025)
 
+### Multi-Lag Correlation Analysis (MVP+) - COMPLETED
+- **Advanced Pattern Detection**: Multi-window correlation analysis across 6h, 24h, and 48h time windows
+- **BM Severity Formula**: Implemented PRD-specified severity calculation: (|Bristol-4| × 1) + (Urgency × 2) + (Blood × 3) + (Pain × 2)
+- **Coverage Tracking**: Automated day coverage calculation with 70% threshold for data quality
+- **Attribution System**: Simple even-split attribution for overlapping meals on the same day
+- **Reliability Scoring**: Three-tier reliability (Low/Medium/High) based on exposure count and variance
+- **Primary Window Selection**: Automatic selection of most reliable window with highest weighted effect
+- **Complete UI Implementation**: Tag cards with primary window indicators, uplift ratios, confidence levels, and other window chips
+- **Database Integration**: Full PostgreSQL schema with derived tables for meal-BM links, daily severity, and tag exposures
+
 ### Enhanced User Experience Features
 - **Autocomplete Food Entry**: Real-time dish name suggestions from previously logged meals with ingredient/trigger counts and usage frequency
 - **Auto-save Functionality**: Every food entry automatically becomes a saved dish without manual save button
@@ -109,12 +119,13 @@ Preferred communication style: Simple, everyday language.
 - **Visual Symptom Indicators**: "1-3" labels and color coding (blue for severity-tracked symptoms) for improved usability
 
 ### Granular Symptom Tracking
-- **UC-Specific Severity Scales**: 1-3 scales for urgency, blood, and pain (renamed from cramping)
-- **Default Moderate Settings**: All severity scores default to 2 for quick logging with easy adjustment
+- **UC-Specific Severity Scales**: 0-3 scales for urgency and pain, binary (0/1) for blood presence
+- **PRD-Compliant Schema**: Updated severity calculations to match specification requirements
 - **Clean UI Design**: Non-overwhelming interface with progressive disclosure principles
-- **Enhanced Database Schema**: New columns for urgencySeverity, bloodSeverity, painSeverity with PostgreSQL integration
+- **Enhanced Database Schema**: Updated columns for urgencySeverity, bloodSeverity, painSeverity with correct ranges
 
 ### AI and Data Integration
 - **OpenAI Enhancement**: Improved prompts for ingredient detection and duplicate prevention
 - **Database Optimization**: Usage tracking, timestamp management, and duplicate handling for saved dishes
 - **Type-Safe Implementation**: Full TypeScript integration with Drizzle ORM and Zod validation
+- **Sample Data Generator**: Realistic test data generation for correlation analysis validation

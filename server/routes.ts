@@ -322,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const symptomEntries = await storage.getSymptomEntriesByDateRange(userId, startDate, endDate);
 
       // Simple correlation analysis
-      const triggerCorrelations = {};
+      const triggerCorrelations: Record<string, { count: number; severity: number }> = {};
       
       for (const symptomEntry of symptomEntries) {
         // Find food entries within 24 hours before symptom
@@ -334,7 +334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         for (const foodEntry of relevantFoods) {
-          for (const trigger of foodEntry.triggerIngredients) {
+          const triggers = foodEntry.triggerIngredients || [];
+          for (const trigger of triggers) {
             if (!triggerCorrelations[trigger]) {
               triggerCorrelations[trigger] = { count: 0, severity: 0 };
             }
@@ -360,6 +361,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to analyze patterns" });
+    }
+  });
+
+  // Multi-lag correlation analysis endpoint
+  app.post("/api/analysis/multi-lag-correlation", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const settings = {
+        windows: req.body.windows || [6, 24, 48],
+        aggregation: req.body.aggregation || "sum",
+        coverageThreshold: req.body.coverageThreshold || 70,
+        minExposures: req.body.minExposures || 3
+      };
+
+      // Generate/refresh derived tables first
+      await storage.generateDerivedTables(userId);
+      
+      // Calculate correlation analysis
+      const correlationResults = await storage.calculateCorrelationAnalysis(userId, settings);
+
+      res.json({
+        results: correlationResults,
+        settings,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Multi-lag correlation error:", error);
+      res.status(500).json({ message: "Failed to calculate multi-lag correlation analysis" });
+    }
+  });
+
+  // Get coverage data for debugging/transparency
+  app.get("/api/analysis/coverage", async (req, res) => {
+    try {
+      const userId = "demo-user";
+      const { days = "30" } = req.query;
+      
+      const daysCount = parseInt(days as string);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - daysCount);
+
+      const coverage = await storage.getUserDayCoverage(userId, startDate, endDate);
+      
+      res.json({
+        coverage,
+        validDays: coverage.filter(c => c.totalCoverage >= 70).length,
+        totalDays: coverage.length,
+        averageCoverage: coverage.length > 0 ? 
+          coverage.reduce((sum, c) => sum + c.totalCoverage, 0) / coverage.length : 0
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch coverage data" });
     }
   });
 
@@ -396,7 +450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         symptomEntries.forEach(entry => {
-          csv += `Symptom,${entry.occurredAt.toISOString()},Bristol Type ${entry.bristolType},"Severity: ${entry.severity}, Symptoms: ${entry.symptoms.join(', ')}"\n`;
+          const symptoms = entry.symptoms || [];
+          csv += `Symptom,${entry.occurredAt.toISOString()},Bristol Type ${entry.bristolType},"Severity: ${entry.severity}, Symptoms: ${symptoms.join(', ')}"\n`;
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -407,6 +462,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
+  // Generate sample data endpoint (for development/testing)
+  app.post("/api/generate-sample-data", async (req, res) => {
+    try {
+      const { generateSampleData } = await import("./utils/sample-data-generator");
+      const result = await generateSampleData();
+      res.json({
+        success: true,
+        ...result,
+        message: "Sample data generated successfully"
+      });
+    } catch (error) {
+      console.error("Sample data generation error:", error);
+      res.status(500).json({ message: "Failed to generate sample data" });
     }
   });
 
