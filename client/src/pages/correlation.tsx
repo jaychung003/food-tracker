@@ -113,6 +113,10 @@ export default function CorrelationPage() {
             onClick={async () => {
               const response = await fetch("/api/import-csv-data", { method: "POST" });
               if (response.ok) {
+                // Invalidate all data queries to refresh the UI
+                queryClient.invalidateQueries({ queryKey: ["/api/food-entries"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/symptom-entries"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/analysis/patterns"] });
                 queryClient.invalidateQueries({ queryKey: ["/api/analysis/coverage"] });
               }
             }}

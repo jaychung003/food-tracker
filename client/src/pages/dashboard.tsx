@@ -16,7 +16,7 @@ export default function Dashboard() {
     queryKey: ["/api/symptom-entries"],
   });
 
-  const { data: patterns } = useQuery({
+  const { data: patterns } = useQuery<{ patterns: any[] }>({
     queryKey: ["/api/analysis/patterns"],
   });
 
@@ -140,7 +140,7 @@ export default function Dashboard() {
       </div>
 
       {/* Weekly Pattern Summary */}
-      {patterns && patterns.patterns.length > 0 && (
+      {patterns?.patterns && patterns.patterns.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100">
             <h2 className="font-semibold text-gray-900">Weekly Pattern</h2>
