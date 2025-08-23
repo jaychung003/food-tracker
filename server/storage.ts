@@ -46,9 +46,6 @@ export interface IStorage {
   calculateCorrelationAnalysis(userId: string, settings: CorrelationAnalysisSettings): Promise<TagCorrelationResult[]>;
   computeCoverageForDate(userId: string, date: Date): Promise<UserDayCoverage | null>;
   generateDerivedTables(userId: string): Promise<void>;
-  
-  // Data management
-  clearAllData?(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -621,18 +618,6 @@ export class MemStorage implements IStorage {
       const bWeight = b.reliability === 'High' ? 1 : b.reliability === 'Medium' ? 0.7 : 0.4;
       return (Math.abs(b.effect) * bWeight) - (Math.abs(a.effect) * aWeight);
     });
-  }
-
-  // Data management method
-  async clearAllData(): Promise<void> {
-    this.foodEntries.clear();
-    this.symptomEntries.clear();
-    this.savedDishes.clear();
-    this.userDayCoverage.clear();
-    this.mealBmLinks.clear();
-    this.dailyWindowSeverity.clear();
-    this.tagExposuresByWindow.clear();
-    // Don't clear users and ingredients as they are needed for functionality
   }
 }
 

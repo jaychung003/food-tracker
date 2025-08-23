@@ -481,25 +481,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Import CSV data endpoint
-  app.post("/api/import-csv-data", async (req, res) => {
-    try {
-      const { importCSVData } = await import("./utils/csv-data-importer");
-      const result = await importCSVData();
-      res.json({
-        success: true,
-        ...result,
-        message: "CSV data imported successfully"
-      });
-    } catch (error) {
-      console.error("CSV data import error:", error);
-      res.status(500).json({ 
-        message: "Failed to import CSV data",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }
