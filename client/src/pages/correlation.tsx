@@ -41,7 +41,7 @@ export default function CorrelationPage() {
 
   // Fetch coverage data
   const { data: coverageData } = useQuery<CoverageData>({
-    queryKey: ["/api/analysis/coverage", { days: 30 }],
+    queryKey: ["/api/analysis/coverage?days=30"],
   });
 
   // Multi-lag correlation analysis mutation

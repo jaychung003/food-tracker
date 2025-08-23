@@ -7,11 +7,16 @@ import { Download, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Analysis() {
-  const [timeRange, setTimeRange] = useState("7");
+  const [timeRange, setTimeRange] = useState("30");
   const { toast } = useToast();
 
-  const { data: analysisData, isLoading } = useQuery({
-    queryKey: ["/api/analysis/patterns", { days: timeRange }],
+  const { data: analysisData, isLoading } = useQuery<{
+    patterns: any[];
+    totalDays: number;
+    foodEntries: number;
+    symptomEntries: number;
+  }>({
+    queryKey: [`/api/analysis/patterns?days=${timeRange}`],
   });
 
   const handleExport = async (format: string) => {
